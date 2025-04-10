@@ -82,7 +82,7 @@ class LocalizationNodeEKF : public rclcpp::Node {
 public:
     LocalizationNodeEKF() : Node("localization_node_ekf"){
         // Init vars
-        this->Q_t_l<<0.78, 0.0, 0.0, 0.0, 0.001, 0.0, 0.0 ,0.0, 0.01; // Tweakable
+        this->Q_t_l<<0.78, 0.0, 0.0, 0.0, 0.001, 0.0, 0.0 ,0.0, 0.00005; // Tweakable
         this->R_t<<25e-5, 0.0, 0.0, 25e-5; // Tweakable
         this->sigma_t_1<<1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6;
         this->mu_t_1<<0.0, 0.0, 0.0;
@@ -244,13 +244,14 @@ private:
         else{
             d_t= msg->header.stamp.sec-this->sec_history + (msg->header.stamp.nanosec-this->nanosec_history)/pow(10, 9);
         }
-        LOG_INFO(std::to_string(d_t).c_str())
+        // LOG_INFO(std::to_string(d_t).c_str())
         this->sec_history = msg->header.stamp.sec;
         this->nanosec_history = msg->header.stamp.nanosec;
 
 
         double vx = (M_PI * this->r_wheel * (msg->speeds.lb_speed + msg->speeds.rb_speed))/this->i_gear;
-        double Phi = this->imu_record->orientation.z;
+        double Phi = this->mu_t_1(2,0); // Changed the source of input for Phi
+        // double Phi = this->imu_record->orientation.z;
         double Phi_dot = this->imu_record->angular_velocity.z;
 
         // Prediction
@@ -263,11 +264,10 @@ private:
         this->sigma_t_bar = this->G_t*this->sigma_t_1*this->G_t.transpose() + this->Q_t;
 
         // Update
-        std::vector<double> mu_t_bar_vector = {{this->mu_t_bar(0,0)}, {this->mu_t_bar(1,0)}, {this->mu_t_bar(2,0)}};
-        std::vector<int> data_assoc = performDataAssociation(mu_t_bar_vector, this->perception_record->track, this->R_t);
 
         if(this->perception_available){
-        // if(true){
+        // if(false){
+            std::vector<int> data_assoc = performDataAssociation({{this->mu_t_bar(0,0)}, {this->mu_t_bar(1,0)}, {this->mu_t_bar(2,0)}}, this->perception_record->track, this->R_t);
             this->perception_available = false;
             for (int i = 0; i < data_assoc.size(); i++)
             {
@@ -278,7 +278,7 @@ private:
                 double q = delta.transpose() * delta;
                 Eigen::Matrix<double, 2, 1> z_t_j_hat;z_t_j_hat<<sqrt(q),atan2(delta(0,0), delta(1,0));
 
-                Eigen::Matrix<double, 2, 3> H_t;H_t<<(-1*sqrt(q)*delta(0,0)),(-1*sqrt(q)*delta(1,0)), 0.0, delta(0,0), -delta(1,0), -1*q;
+                Eigen::Matrix<double, 2, 3> H_t;H_t<<(-1*delta(0,0))/sqrt(q),(-1*delta(1,0))/sqrt(q), 0.0, delta(1,0)/q, -1*delta(0,0)/q, -1.0;
                 
                 Eigen::Matrix<double, 3, 2> K_t; // K_t's dimensions are (dim of state vector)x(dim of measurement vector)
                 K_t=this->sigma_t_bar * H_t.transpose() * (H_t * this->sigma_t_bar* H_t.transpose() + this->R_t).inverse();
