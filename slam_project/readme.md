@@ -11,7 +11,7 @@ Note: Source dv_msgs package before building this project
 
 * EKF part: Done, need to tweak parameters.
     Implements EKF
-    Launch using: ros2 launch slam_project localization_EKF_SLAM
+    Launch using: ros2 launch slam_project localization_EKF_SLAM.launch.py
 
 
 

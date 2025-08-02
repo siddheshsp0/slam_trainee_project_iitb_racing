@@ -37,6 +37,7 @@ namespace Utils{
     double euclideanDistance(const std::vector<double>*, const std::vector<double>*);
     std::vector<int> NNAssociate(const std::vector<std::vector<double>>*, const std::vector<std::vector<double>>*, const double*);
     std::vector<std::vector<double>> transpose2D(const std::vector<std::vector<double>>*A,const cublasHandle_t*);
+    double normalizeAngle(double);
 }
 
 

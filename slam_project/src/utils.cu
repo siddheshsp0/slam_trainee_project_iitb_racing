@@ -253,3 +253,7 @@ std::vector<std::vector<double>> Utils::transpose2D(const std::vector<std::vecto
      return result;
  }
 
+double Utils::normalizeAngle(double angle){
+     angle = std::fmod(angle + M_PI, 2 * M_PI) - M_PI;
+     return angle;
+}
